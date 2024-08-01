@@ -96,17 +96,6 @@ func fingerprint() ([32]byte) {
 	return sha256.Sum256([]byte(output + platform + uid))
 }
 
-func loadKey(path string) ([]byte){
-	privBytes, err := ioutil.ReadFile(path + "key.priv")
-	
-	if err != nil {
-		fmt.Println("No private key found")
-		return nil
-	}
-	
-	return privBytes
-}
-
 func generateKey(path string) (priv ed25519.PrivateKey, err error){
 
 	var (
@@ -166,11 +155,46 @@ func sign(data []byte, key ed25519.PrivateKey) ([]byte, error){
 	return sig, nil
 }
 
-func main() {
+func loadKey(path string) (ed25519.PrivateKey){
+	privBytes, err := ioutil.ReadFile(path + "key.priv")
 	
+	if err != nil {
+		fmt.Println("No private key found")
+		return nil
+	}
+
+	block, _ := pem.Decode(privBytes)
+	
+	candidatePrivate, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	
+	if err != nil {
+		fmt.Printf("Error parsing key: %s", err.Error)
+	}
+
+	fmt.Printf("PRIV: %v", candidatePrivate)
+	priv := candidatePrivate.(ed25519.PrivateKey)
+
+	
+	return priv
+}
+
+func main() {
+
+	path := "./"
+
+	var priv ed25519.PrivateKey = nil
+	var err error = nil
+	
+	priv = loadKey(path)
+
+	// if key was not loaded from file it will be nil	
+
+	if priv == nil {
+		priv, err = generateKey("./")
+	}
+		
 	finger := fingerprint() 
 	fmt.Printf("fingerprint: %x", finger)
-	priv, err := generateKey("./")
 
 	if err != nil {
 		fmt.Printf("Error generating key: %s", err.Error)
