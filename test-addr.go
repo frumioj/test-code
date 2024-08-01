@@ -155,8 +155,8 @@ func generateKey(path string) (priv ed25519.PrivateKey, err error){
 	return priv, err
 }
 
-func sign(data string, key ed25519.PrivateKey) ([]byte, error){
-	sig, err := key.Sign(nil, []byte(data), &ed25519.Options{Context: "SPIRE AGENT NODE ATTESTATION"})
+func sign(data []byte, key ed25519.PrivateKey) ([]byte, error){
+	sig, err := key.Sign(nil, data, &ed25519.Options{Context: "SPIRE AGENT NODE ATTESTATION"})
 
 	if err != nil {
 		fmt.Printf("Signature failed: %s", err.Error)
@@ -167,7 +167,9 @@ func sign(data string, key ed25519.PrivateKey) ([]byte, error){
 }
 
 func main() {
-	fmt.Printf("fingerprint: %x", fingerprint())
+	
+	finger := fingerprint() 
+	fmt.Printf("fingerprint: %x", finger)
 	priv, err := generateKey("./")
 
 	if err != nil {
@@ -175,6 +177,12 @@ func main() {
 	}
 
 	if priv != nil {
-		// marshal key to privkey and pass to sign
+		signature, err := sign(finger[:], priv)
+
+		if err != nil {
+			fmt.Printf("Signature failed for: %s\n", err.Error)
+		}
+		
+		fmt.Printf("Signed fingerprint: %x", signature)
 	}
 }
